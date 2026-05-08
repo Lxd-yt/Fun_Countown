@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DVD Bounce Countdown</title>
+
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(135deg, #ff00c8, #00eaff, #ffea00);
+    background-size: 400% 400%;
+    animation: bgShift 10s ease infinite;
+    color: white;
+  }
+
+  @keyframes bgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    height: 100vh;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    box-sizing: border-box;
+    border-right: 3px solid rgba(255,255,255,0.3);
+  }
+
+  .sidebar h2 {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .gameBox {
+    background: rgba(255,255,255,0.15);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+
+  .gameBox button {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: white;
+    color: black;
+    font-weight: bold;
+    margin-top: 8px;
+  }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 3rem;
+    text-shadow: 0 0 15px rgba(255,255,255,0.7);
+  }
+
+  input[type="datetime-local"] {
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    backdrop-filter: blur(6px);
+  }
+
+  button.start {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    background: #ffffff;
+    color: #000;
+    margin-left: 10px;
+  }
+
+  /* DVD BOUNCING BOX */
+  #dvdBox {
+    position: absolute;
+    left: 200px;
+    top: 200px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px);
+    transition: transform 0.1s linear;
+  }
+
+  .countdown {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8);
+  }
+
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+
+  /* SECRET SURPRISE */
+  .secret {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 2rem;
+    opacity: 0;
+    transition: opacity 1s ease, transform 1s ease;
+    transform: scale(0.5);
+    pointer-events: none;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>🎮 Mini Games</h2>
+
+  <div class="gameBox">
+    <h3>Click Frenzy</h3>
+    <p>Click as fast as you can in 5 seconds!</p>
+    <button onclick="startClickFrenzy()">Start</button>
+    <p id="frenzyScore"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Color Mutator</h3>
+    <p>Press to mutate the background</p>
+    <button onclick="mutateBackground()">Mutate</button>
+  </div>
+
+  <div class="gameBox">
+    <h3>Dice Roller</h3>
+    <button onclick="rollDice()">Roll</button>
+    <p id="diceResult"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Most Viewed Date</h3>
+    <p id="mostViewed">Loading...</p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Leaderboard</h3>
+    <ol id="leaderboard"></ol>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <h1>🌟 Ultimate Countdown 🌟</h1>
+
+  <div>
+    <input type="datetime-local" id="targetDate">
+    <button class="start" onclick="startCountdown()">Start</button>
+  </div>
+</div>
+
+<!-- DVD BOUNCING COUNTDOWN -->
+<div id="dvdBox">
+  <div class="countdown" id="countdownDisplay">Waiting...</div>
+  <div id="statusText"></div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<!-- SECRET SURPRISE -->
+<div class="secret" id="secretThing">✨</div>
+
+<!-- CHEERING SOUND -->
+<audio id="cheer" src="https://actions.google.com/sounds/v1/crowds/cheer.ogg"></audio>
+
+<!-- YOUTUBE FOOTER -->
+<div style="
+  position: fixed;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  opacity: 0.75;
+  color: white;
+  font-weight: 500;
+  pointer-events: none;
+  text-shadow: 0 0 6px rgba(0,0,0,0.6);
+">
+  follow me on YouTube at @Therealliamxd
+</div>
+
+<script>
+/* COUNTDOWN */
+let timerId = null;
+let targetTime = null;
+
+function formatTime(ms) {
+  if (ms <= 0) return "00d 00h 00m 00s";
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = n => String(n).padStart(2, "0");
+  return `${pad(d)}d ${pad(h)}h ${pad(m)}m ${pad(sec)}s`;
+}
+
+function startCountdown() {
+  const input = document.getElementById("targetDate").value;
+  if (!input) return alert("Pick a date!");
+
+  const date = new Date(input);
+  targetTime = date.getTime();
+
+  let count = localStorage.getItem(input) || 0;
+  localStorage.setItem(input, Number(count) + 1);
+
+  updateMostViewed();
+  updateLeaderboard();
+
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(updateCountdown, 1000);
+  updateCountdown();
+}
+
+function updateCountdown() {
+  const now = Date.now();
+  const diff = targetTime - now;
+
+  if (diff <= 0) {
+    clearInterval(timerId);
+    document.getElementById("countdownDisplay").textContent = "🎉 TIME'S UP!!! 🎉";
+    launchConfetti();
+    setTimeout(() => revealSecret(), 300);
+    return;
+  }
+
+  document.getElementById("countdownDisplay").textContent = formatTime(diff);
+  document.getElementById("statusText").textContent = "Target: " + new Date(targetTime).toLocaleString();
+}
+
+/* DVD BOUNCE */
+let dvdX = 200;
+let dvdY = 200;
+let dvdSpeedX = 2.2;
+let dvdSpeedY = 2.2;
+
+function moveDVD() {
+  const box = document.getElementById("dvdBox");
+  const w = window.innerWidth - box.offsetWidth;
+  const h = window.innerHeight - box.offsetHeight;
+
+  dvdX += dvdSpeedX;
+  dvdY += dvdSpeedY;
+
+  let hitCorner = false;
+
+  if (dvdX <= 0 || dvdX >= w) {
+    dvdSpeedX *= -1;
+    hitCorner = true;
+  }
+  if (dvdY <= 0 || dvdY >= h) {
+    dvdSpeedY *= -1;
+    hitCorner = true;
+  }
+
+  if (hitCorner) cornerHit();
+
+  box.style.left = dvdX + "px";
+  box.style.top = dvdY + "px";
+
+  requestAnimationFrame(moveDVD);
+}
+moveDVD();
+
+/* CORNER HIT */
+function cornerHit() {
+  document.getElementById("cheer").play();
+  triggerSpecialEffect();
+}
+
+/* SECRET EFFECT */
+function triggerSpecialEffect() {
+  document.body.style.filter = "hue-rotate(" + (Math.random()*360) + "deg)";
+  setTimeout(() => document.body.style.filter = "none", 500);
+}
+
+/* CONFETTI */
+const canvas = document.getElementById("confettiCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let confetti = [];
+
+function launchConfetti() {
+  confetti = [];
+  for (let i = 0; i < 300; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      size: Math.random() * 8 + 4,
+      color: `hsl(${Math.random()*360},100%,50%)`,
+      speed: Math.random() * 4 + 2
+    });
+  }
+  animateConfetti();
+}
+
+function animateConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confetti.forEach(p => {
+    p.y += p.speed;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+  if (confetti.some(p => p.y < canvas.height)) {
+    requestAnimationFrame(animateConfetti);
+  }
+}
+
+/* MINI GAMES */
+let frenzyClicks = 0;
+function startClickFrenzy() {
+  frenzyClicks = 0;
+  document.getElementById("frenzyScore").textContent = "GO!";
+  window.onclick = countClick;
+  setTimeout(() => {
+    window.onclick = null;
+    document.getElementById("frenzyScore").textContent = "Score: " + frenzyClicks;
+  }, 5000);
+}
+function countClick() { frenzyClicks++; }
+
+function mutateBackground() {
+  document.body.style.background = `linear-gradient(135deg,
+    hsl(${Math.random()*360},100%,60%),
+    hsl(${Math.random()*360},100%,60%),
+    hsl(${Math.random()*360},100%,60%))`;
+}
+
+function rollDice() {
+  document.getElementById("diceResult").textContent = "You rolled: " + (Math.floor(Math.random()*6)+1);
+}
+
+/* LEADERBOARD */
+function updateLeaderboard() {
+  const leaderboard = document.getElementById("leaderboard");
+  const entries = [];
+  for (let key in localStorage) {
+    if (!localStorage.hasOwnProperty(key)) continue;
+    entries.push({ date: key, views: Number(localStorage.getItem(key)) });
+  }
+  entries.sort((a, b) => b.views - a.views);
+  leaderboard.innerHTML = entries
+    .slice(0, 5)
+    .map(e => `<li>${e.date} — ${e.views} views</li>`)
+    .join("");
+}
+
+/* MOST VIEWED */
+function updateMostViewed() {
+  let best = null;
+  let bestCount = 0;
+  for (let key in localStorage) {
+    if (!localStorage.hasOwnProperty(key)) continue;
+    const count = Number(localStorage.getItem(key));
+    if (count > bestCount) {
+      best = key;
+      bestCount = count;
+    }
+  }
+  document.getElementById("mostViewed").textContent =
+    best ? `${best} (${bestCount} views)` : "None yet";
+}
+
+/* SECRET STAR */
+function revealSecret() {
+  const s = document.getElementById("secretThing");
+  s.style.opacity = 1;
+  s.style.transform = "scale(1)";
+}
+</script>
+
+</body>
+</html>
+
+
