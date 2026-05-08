@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DVD Bounce Countdown</title>
+
+<style>
+  :root {
+    --bg-gradient: linear-gradient(135deg, #ff00c8, #00eaff, #ffea00);
+    --sidebar-bg: rgba(0,0,0,0.35);
+    --panel-bg: rgba(255,255,255,0.12);
+    --panel-border: rgba(255,255,255,0.35);
+    --accent: #ffea00;
+    --text-color: #ffffff;
+    --button-bg: #ffffff;
+    --button-text: #000000;
+  }
+
+  body.theme-vaporwave {
+    --bg-gradient: linear-gradient(135deg, #ff00c8, #6a00ff, #00eaff);
+    --accent: #ffea00;
+  }
+
+  body.theme-glass {
+    --bg-gradient: linear-gradient(135deg, #1f1c2c, #928dab);
+    --accent: #00eaff;
+  }
+
+  body.theme-gamer {
+    --bg-gradient: radial-gradient(circle at top, #00ff88, #00110a 60%, #000000);
+    --accent: #00ff88;
+  }
+
+  body.theme-chaos {
+    --bg-gradient: linear-gradient(135deg, #ff0000, #00ff00, #0000ff);
+    --accent: #ffffff;
+  }
+
+  body.theme-hybrid {
+    --bg-gradient: linear-gradient(135deg, #ff00c8, #1f1c2c, #00eaff);
+    --accent: #ffea00;
+  }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-family: "Poppins", sans-serif;
+    background: var(--bg-gradient);
+    background-size: 400% 400%;
+    animation: bgShift 10s ease infinite;
+    color: var(--text-color);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  body.animations-off {
+    animation: none !important;
+  }
+
+  @keyframes bgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--sidebar-bg);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    box-sizing: border-box;
+    border-right: 3px solid rgba(255,255,255,0.3);
+  }
+
+  .sidebar h2 {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  .sidebar button,
+  .sidebar .shop-btn {
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: var(--button-bg);
+    color: var(--button-text);
+    font-weight: bold;
+  }
+
+  .shop-btn {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+  }
+
+  .gameBox {
+    background: rgba(255,255,255,0.15);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+
+  .gameBox button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 8px;
+  }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+  }
+
+  h1 {
+    font-size: 3rem;
+    text-shadow: 0 0 15px rgba(255,255,255,0.7);
+  }
+
+  input[type="datetime-local"] {
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    backdrop-filter: blur(6px);
+  }
+
+  button.start {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    background: var(--button-bg);
+    color: var(--button-text);
+    margin-left: 10px;
+  }
+
+  /* DVD BOUNCING BOX */
+  #dvdBox {
+    position: absolute;
+    left: 200px;
+    top: 200px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px);
+    transition: transform 0.1s linear;
+  }
+
+  .countdown {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8);
+  }
+
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+  }
+
+  /* SECRET SURPRISE */
+  .secret {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 2rem;
+    opacity: 0;
+    transition: opacity 1s ease, transform 1s ease;
+    transform: scale(0.5);
+    pointer-events: none;
+  }
+
+  /* SETTINGS BUTTON */
+  .settings-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 15px rgba(255,255,255,0.6);
+    animation: rainbowGlow 3s linear infinite;
+    z-index: 9999;
+  }
+
+  .settings-btn svg {
+    width: 26px;
+    height: 26px;
+    fill: #ffffff;
+  }
+
+  .settings-btn:hover {
+    transform: scale(1.05);
+  }
+
+  @keyframes rainbowGlow {
+    0% { filter: hue-rotate(0deg); box-shadow: 0 0 12px rgba(255,255,255,0.7); }
+    50% { filter: hue-rotate(180deg); box-shadow: 0 0 18px rgba(255,255,255,0.9); }
+    100% { filter: hue-rotate(360deg); box-shadow: 0 0 12px rgba(255,255,255,0.7); }
+  }
+
+  /* FLOATING PANELS (SETTINGS + SHOP) */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 9997;
+  }
+
+  .backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .floating-panel {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translate(120%, -50%);
+    width: min(400px, 80vw);
+    max-height: 80vh;
+    background: rgba(255,255,255,0.12);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.35);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    backdrop-filter: blur(18px);
+    padding: 18px 20px;
+    box-sizing: border-box;
+    color: #ffffff;
+    overflow-y: auto;
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    z-index: 9998;
+  }
+
+  .floating-panel.active {
+    transform: translate(0, -50%);
+    opacity: 1;
+  }
+
+  .floating-panel h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .panel-section {
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .panel-section:last-child {
+    border-bottom: none;
+  }
+
+  .theme-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .theme-btn {
+    flex: 1 1 45%;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.9);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .theme-btn.active {
+    outline: 2px solid var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 6px 0;
+  }
+
+  .toggle-row span {
+    font-size: 0.9rem;
+  }
+
+  .toggle-row button {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .danger-btn {
+    width: 100%;
+    padding: 8px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #ff4b4b;
+    color: #fff;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+
+  .shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 6px 0;
+    font-size: 0.9rem;
+  }
+
+  .shop-item button {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .shop-meta {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  /* YOUTUBE FOOTER */
+  .yt-footer {
+    position: fixed;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    opacity: 0.75;
+    color: white;
+    font-weight: 500;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(0,0,0,0.6);
+  }
+
+  @media (max-width: 768px) {
+    .floating-panel {
+      right: 10px;
+      width: min(80vw, 420px);
+    }
+  }
+</style>
+</head>
+
+<body class="theme-hybrid">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <button class="shop-btn" onclick="toggleShopPanel(true)">🛒 Upgrade Shop</button>
+
+  <h2>🎮 Mini Games</h2>
+
+  <div class="gameBox">
+    <h3>Click Frenzy</h3>
+    <p>Click as fast as you can in 5 seconds!</p>
+    <button onclick="startClickFrenzy()">Start</button>
+    <p id="frenzyScore"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Reaction Test</h3>
+    <p>Wait for green, then tap!</p>
+    <button onclick="startReactionTest()" id="reactionBtn">Start</button>
+    <p id="reactionResult"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Number Rush</h3>
+    <p>Tap numbers 1–5 in order!</p>
+    <button onclick="startNumberRush()">Start</button>
+    <p id="numberRushStatus"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Color Mutator</h3>
+    <p>Press to mutate the background</p>
+    <button onclick="mutateBackground()">Mutate</button>
+  </div>
+
+  <div class="gameBox">
+    <h3>Dice Roller</h3>
+    <button onclick="rollDice()">Roll</button>
+    <p id="diceResult"></p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Most Viewed Date</h3>
+    <p id="mostViewed">Loading...</p>
+  </div>
+
+  <div class="gameBox">
+    <h3>Leaderboard</h3>
+    <ol id="leaderboard"></ol>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <h1>🌟 Ultimate Countdown 🌟</h1>
+
+  <div>
+    <input type="datetime-local" id="targetDate">
+    <button class="start" onclick="startCountdown()">Start</button>
+  </div>
+</div>
+
+<!-- DVD BOUNCING COUNTDOWN -->
+<div id="dvdBox">
+  <div class="countdown" id="countdownDisplay">Waiting...</div>
+  <div id="statusText"></div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<!-- SECRET SURPRISE -->
+<div class="secret" id="secretThing">✨</div>
+
+<!-- CHEERING SOUND -->
+<audio id="cheer" src="https://actions.google.com/sounds/v1/crowds/cheer.ogg"></audio>
+<audio id="clickSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="buySound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/woodpecker_pecking.ogg"></audio>
+
+<!-- YOUTUBE FOOTER -->
+<div class="yt-footer">
+  follow me on YouTube at @Therealliamxd
+</div>
+
+<!-- SETTINGS BUTTON -->
+<div class="settings-btn" onclick="toggleSettingsPanel()">
+  <svg viewBox="0 0 24 24">
+    <path d="M19.14,12.94c0.04-0.31,0.06-0.63,0.06-0.94c0-0.32-0.02-0.63-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61
+      l-1.92-3.32c-0.11-0.2-0.36-0.28-0.57-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.4C14.37,2.18,14.18,2,13.95,2h-3.9
+      C9.82,2,9.63,2.18,9.6,2.4L9.27,4.35C8.68,4.59,8.15,4.91,7.65,5.29L5.26,4.33C5.05,4.24,4.8,4.32,4.69,4.52L2.77,7.84
+      C2.66,8.04,2.7,8.31,2.89,8.45l2.03,1.58C4.88,10.35,4.86,10.68,4.86,11c0,0.31,0.02,0.63,0.07,0.94l-2.03,1.58
+      c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.11,0.2,0.36,0.28,0.57,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.33,1.95
+      C9.63,21.82,9.82,22,10.05,22h3.9c0.23,0,0.42-0.18,0.45-0.4l0.33-1.95c0.59-0.24,1.12-0.56,1.62-0.94l2.39,0.96
+      c0.21,0.08,0.46,0,0.57-0.2l1.92-3.32c0.11-0.2,0.06-0.46-0.12-0.61L19.14,12.94z M12,15.6c-1.99,0-3.6-1.61-3.6-3.6
+      s1.61-3.6,3.6-3.6s3.6,1.61,3.6,3.6S13.99,15.6,12,15.6z"/>
+  </svg>
+</div>
+
+<!-- BACKDROP -->
+<div id="backdrop" class="backdrop" onclick="closePanels()"></div>
+
+<!-- SETTINGS PANEL -->
+<div id="settingsPanel" class="floating-panel">
+  <h3>⚙️ Settings</h3>
+
+  <div class="panel-section">
+    <strong>Themes</strong>
+    <div class="theme-buttons">
+      <button class="theme-btn" data-theme="vaporwave" onclick="setTheme('vaporwave')">Vaporwave</button>
+      <button class="theme-btn" data-theme="glass" onclick="setTheme('glass')">Glass</button>
+      <button class="theme-btn" data-theme="gamer" onclick="setTheme('gamer')">Gamer HUD</button>
+      <button class="theme-btn" data-theme="chaos" onclick="setTheme('chaos')">Cartoon Chaos</button>
+      <button class="theme-btn" data-theme="hybrid" onclick="setTheme('hybrid')">Hybrid</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <strong>Toggles</strong>
+    <div class="toggle-row">
+      <span>Sound Effects</span>
+      <button id="soundToggleBtn" onclick="toggleSound()">On</button>
+    </div>
+    <div class="toggle-row">
+      <span>Background Animations</span>
+      <button id="animToggleBtn" onclick="toggleAnimations()">On</button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <strong>Other</strong>
+    <button class="theme-btn" style="width:100%;margin-top:6px;" onclick="toggleShopPanel(true)">Open Shop</button>
+  </div>
+
+  <div class="panel-section">
+    <strong>Danger Zone</strong>
+    <button class="danger-btn" onclick="resetAll()">Reset Everything</button>
+  </div>
+</div>
+
+<!-- SHOP PANEL -->
+<div id="shopPanel" class="floating-panel">
+  <h3>🛒 Upgrade Shop</h3>
+  <p class="shop-meta">Points are earned from Click Frenzy score. Upgrades persist in this browser.</p>
+
+  <div class="panel-section">
+    <strong>Your Stats</strong>
+    <p id="pointsDisplay">Points: 0</p>
+    <p id="multiplierDisplay">Click Multiplier: x1</p>
+  </div>
+
+  <div class="panel-section">
+    <strong>Upgrades</strong>
+
+    <div class="shop-item">
+      <div>
+        <div>Click Multiplier +1</div>
+        <div class="shop-meta">Cost: 50 points</div>
+      </div>
+      <button onclick="buyUpgrade('multiplier')">Buy</button>
+    </div>
+
+    <div class="shop-item">
+      <div>
+        <div>Auto Clicker (adds passive points)</div>
+        <div class="shop-meta">Cost: 150 points</div>
+      </div>
+      <button onclick="buyUpgrade('auto')">Buy</button>
+    </div>
+
+    <div class="shop-item">
+      <div>
+        <div>Time Freeze (slows DVD for 5s)</div>
+        <div class="shop-meta">Cost: 80 points</div>
+      </div>
+      <button onclick="buyUpgrade('freeze')">Buy</button>
+    </div>
+
+    <div class="shop-item">
+      <div>
+        <div>Chaos Mode (extra hue flashes)</div>
+        <div class="shop-meta">Cost: 120 points</div>
+      </div>
+      <button onclick="buyUpgrade('chaos')">Buy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* GLOBAL TOUCH FIXES */
+document.addEventListener("gesturestart", e => e.preventDefault());
+document.addEventListener("touchstart", e => e.preventDefault(), { passive: false });
+document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+
+/* STATE */
+let timerId = null;
+let targetTime = null;
+
+let frenzyClicks = 0;
+let frenzyActive = false;
+
+let soundOn = true;
+let animationsOn = true;
+
+let points = 0;
+let clickMultiplier = 1;
+let autoClickerLevel = 0;
+let chaosUnlocked = false;
+
+let autoClickerInterval = null;
+
+/* UTIL SOUND */
+function playSound(id) {
+  if (!soundOn) return;
+  const el = document.getElementById(id);
+  if (el) {
+    el.currentTime = 0;
+    el.play().catch(() => {});
+  }
+}
+
+/* COUNTDOWN */
+function formatTime(ms) {
+  if (ms <= 0) return "00d 00h 00m 00s";
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = n => String(n).padStart(2, "0");
+  return `${pad(d)}d ${pad(h)}h ${pad(m)}m ${pad(sec)}s`;
+}
+
+function startCountdown() {
+  const input = document.getElementById("targetDate").value;
+  if (!input) return alert("Pick a date!");
+
+  const date = new Date(input);
+  targetTime = date.getTime();
+
+  let count = localStorage.getItem("date_" + input) || 0;
+  localStorage.setItem("date_" + input, Number(count) + 1);
+
+  updateMostViewed();
+  updateLeaderboard();
+
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(updateCountdown, 1000);
+  updateCountdown();
+}
+
+function updateCountdown() {
+  const now = Date.now();
+  const diff = targetTime - now;
+
+  if (diff <= 0) {
+    clearInterval(timerId);
+    document.getElementById("countdownDisplay").textContent = "🎉 TIME'S UP!!! 🎉";
+    launchConfetti();
+    setTimeout(() => revealSecret(), 300);
+    return;
+  }
+
+  document.getElementById("countdownDisplay").textContent = formatTime(diff);
+  document.getElementById("statusText").textContent = "Target: " + new Date(targetTime).toLocaleString();
+}
+
+/* DVD BOUNCE */
+let dvdX = 200;
+let dvdY = 200;
+let dvdSpeedX = 2.2;
+let dvdSpeedY = 2.2;
+let dvdFrozen = false;
+
+function moveDVD() {
+  const box = document.getElementById("dvdBox");
+  const w = window.innerWidth - box.offsetWidth;
+  const h = window.innerHeight - box.offsetHeight;
+
+  if (!dvdFrozen) {
+    dvdX += dvdSpeedX;
+    dvdY += dvdSpeedY;
+  }
+
+  let hitCorner = false;
+
+  if (dvdX <= 0 || dvdX >= w) {
+    dvdSpeedX *= -1;
+    hitCorner = true;
+  }
+  if (dvdY <= 0 || dvdY >= h) {
+    dvdSpeedY *= -1;
+    hitCorner = true;
+  }
+
+  if (hitCorner) cornerHit();
+
+  box.style.left = dvdX + "px";
+  box.style.top = dvdY + "px";
+
+  requestAnimationFrame(moveDVD);
+}
+moveDVD();
+
+/* CORNER HIT */
+function cornerHit() {
+  playSound("cheer");
+  triggerSpecialEffect();
+}
+
+/* SECRET EFFECT */
+function triggerSpecialEffect() {
+  if (chaosUnlocked) {
+    document.body.style.filter = "hue-rotate(" + (Math.random()*360) + "deg) saturate(1.5)";
+  } else {
+    document.body.style.filter = "hue-rotate(" + (Math.random()*360) + "deg)";
+  }
+  setTimeout(() => document.body.style.filter = "none", 500);
+}
+
+/* CONFETTI */
+const canvas = document.getElementById("confettiCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let confetti = [];
+
+function launchConfetti() {
+  confetti = [];
+  for (let i = 0; i < 300; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      size: Math.random() * 8 + 4,
+      color: `hsl(${Math.random()*360},100%,50%)`,
+      speed: Math.random() * 4 + 2
+    });
+  }
+  animateConfetti();
+}
+
+function animateConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confetti.forEach(p => {
+    p.y += p.speed;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+  if (confetti.some(p => p.y < canvas.height)) {
+    requestAnimationFrame(animateConfetti);
+  }
+}
+
+/* MINI GAMES: CLICK FRENZY */
+function startClickFrenzy() {
+  frenzyClicks = 0;
+  frenzyActive = true;
+  document.getElementById("frenzyScore").textContent = "GO!";
+  window.addEventListener("pointerdown", countClick);
+
+  setTimeout(() => {
+    frenzyActive = false;
+    window.removeEventListener("pointerdown", countClick);
+    const finalScore = frenzyClicks * clickMultiplier;
+    document.getElementById("frenzyScore").textContent = "Score: " + finalScore + " (x" + clickMultiplier + ")";
+    addPoints(finalScore);
+  }, 5000);
+}
+
+function countClick() {
+  if (frenzyActive) {
+    frenzyClicks++;
+    playSound("clickSound");
+  }
+}
+
+/* MINI GAME: REACTION TEST */
+let reactionTimeout = null;
+let reactionStart = null;
+let reactionWaiting = false;
+
+function startReactionTest() {
+  const btn = document.getElementById("reactionBtn");
+  const result = document.getElementById("reactionResult");
+  if (reactionWaiting) {
+    // clicked too early
+    clearTimeout(reactionTimeout);
+    reactionWaiting = false;
+    btn.textContent = "Start";
+    result.textContent = "Too early! Try again.";
+    playSound("errorSound");
+    return;
+  }
+
+  btn.textContent = "Wait for green...";
+  result.textContent = "";
+  reactionWaiting = true;
+
+  const delay = 1000 + Math.random() * 3000;
+  reactionTimeout = setTimeout(() => {
+    btn.textContent = "TAP!";
+    btn.style.background = "#00ff88";
+    reactionStart = performance.now();
+  }, delay);
+
+  btn.onclick = () => {
+    if (!reactionWaiting) {
+      startReactionTest();
+      return;
+    }
+    if (!reactionStart) {
+      // too early
+      clearTimeout(reactionTimeout);
+      reactionWaiting = false;
+      btn.textContent = "Start";
+      btn.style.background = "";
+      result.textContent = "Too early! Try again.";
+      playSound("errorSound");
+    } else {
+      const time = Math.round(performance.now() - reactionStart);
+      reactionWaiting = false;
+      reactionStart = null;
+      btn.textContent = "Start";
+      btn.style.background = "";
+      result.textContent = "Reaction: " + time + " ms";
+      addPoints(Math.max(10, 200 - time));
+      playSound("clickSound");
+    }
+    btn.onclick = startReactionTest;
+  };
+}
+
+/* MINI GAME: NUMBER RUSH */
+let numberRushNext = 1;
+let numberRushActive = false;
+
+function startNumberRush() {
+  const status = document.getElementById("numberRushStatus");
+  numberRushNext = 1;
+  numberRushActive = true;
+  status.textContent = "Tap numbers 1 to 5 in order!";
+  status.style.cursor = "pointer";
+  status.onclick = handleNumberRushClick;
+}
+
+function handleNumberRushClick() {
+  if (!numberRushActive) return;
+  const status = document.getElementById("numberRushStatus");
+  const expected = String(numberRushNext);
+  const clicked = prompt("Enter number " + numberRushNext + ":");
+  if (clicked === expected) {
+    numberRushNext++;
+    playSound("clickSound");
+    if (numberRushNext > 5) {
+      numberRushActive = false;
+      status.textContent = "Completed! +50 points";
+      status.onclick = null;
+      addPoints(50);
+    } else {
+      status.textContent = "Good! Now " + numberRushNext;
+    }
+  } else {
+    numberRushActive = false;
+    status.textContent = "Wrong number! Try again.";
+    status.onclick = null;
+    playSound("errorSound");
+  }
+}
+
+/* COLOR MUTATOR */
+function mutateBackground() {
+  document.body.style.background = `linear-gradient(135deg,
+    hsl(${Math.random()*360},100%,60%),
+    hsl(${Math.random()*360},100%,60%),
+    hsl(${Math.random()*360},100%,60%))`;
+}
+
+/* DICE */
+function rollDice() {
+  document.getElementById("diceResult").textContent = "You rolled: " + (Math.floor(Math.random()*6)+1);
+}
+
+/* LEADERBOARD */
+function updateLeaderboard() {
+  const leaderboard = document.getElementById("leaderboard");
+  const entries = [];
+  for (let key in localStorage) {
+    if (!localStorage.hasOwnProperty(key)) continue;
+    if (!key.startsWith("date_")) continue;
+    entries.push({ date: key.replace("date_",""), views: Number(localStorage.getItem(key)) });
+  }
+  entries.sort((a, b) => b.views - a.views);
+  leaderboard.innerHTML = entries
+    .slice(0, 5)
+    .map(e => `<li>${e.date} — ${e.views} views</li>`)
+    .join("");
+}
+
+/* MOST VIEWED */
+function updateMostViewed() {
+  let best = null;
+  let bestCount = 0;
+  for (let key in localStorage) {
+    if (!localStorage.hasOwnProperty(key)) continue;
+    if (!key.startsWith("date_")) continue;
+    const count = Number(localStorage.getItem(key));
+    if (count > bestCount) {
+      best = key.replace("date_","");
+      bestCount = count;
+    }
+  }
+  document.getElementById("mostViewed").textContent =
+    best ? `${best} (${bestCount} views)` : "None yet";
+}
+
+/* SECRET STAR */
+function revealSecret() {
+  const s = document.getElementById("secretThing");
+  s.style.opacity = 1;
+  s.style.transform = "scale(1)";
+}
+
+/* SETTINGS + SHOP PANELS */
+function toggleSettingsPanel(forceOpen) {
+  const panel = document.getElementById("settingsPanel");
+  const backdrop = document.getElementById("backdrop");
+  const isActive = panel.classList.contains("active");
+  const shouldOpen = forceOpen === true ? true : !isActive;
+
+  if (shouldOpen) {
+    panel.classList.add("active");
+    backdrop.classList.add("active");
+  } else {
+    panel.classList.remove("active");
+    if (!document.getElementById("shopPanel").classList.contains("active")) {
+      backdrop.classList.remove("active");
+    }
+  }
+}
+
+function toggleShopPanel(forceOpen) {
+  const panel = document.getElementById("shopPanel");
+  const backdrop = document.getElementById("backdrop");
+  const isActive = panel.classList.contains("active");
+  const shouldOpen = forceOpen === true ? true : !isActive;
+
+  if (shouldOpen) {
+    panel.classList.add("active");
+    backdrop.classList.add("active");
+    updateShopUI();
+  } else {
+    panel.classList.remove("active");
+    if (!document.getElementById("settingsPanel").classList.contains("active")) {
+      backdrop.classList.remove("active");
+    }
+  }
+}
+
+function closePanels() {
+  document.getElementById("settingsPanel").classList.remove("active");
+  document.getElementById("shopPanel").classList.remove("active");
+  document.getElementById("backdrop").classList.remove("active");
+}
+
+/* THEME ENGINE */
+function setTheme(theme) {
+  const body = document.body;
+  body.classList.remove("theme-vaporwave","theme-glass","theme-gamer","theme-chaos","theme-hybrid");
+  body.classList.add("theme-" + theme);
+  localStorage.setItem("theme", theme);
+
+  document.querySelectorAll(".theme-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === theme);
+  });
+}
+
+/* TOGGLES */
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById("soundToggleBtn").textContent = soundOn ? "On" : "Off";
+  localStorage.setItem("soundOn", soundOn ? "1" : "0");
+}
+
+function toggleAnimations() {
+  animationsOn = !animationsOn;
+  document.getElementById("animToggleBtn").textContent = animationsOn ? "On" : "Off";
+  if (animationsOn) {
+    document.body.classList.remove("animations-off");
+  } else {
+    document.body.classList.add("animations-off");
+  }
+  localStorage.setItem("animationsOn", animationsOn ? "1" : "0");
+}
+
+/* SHOP / UPGRADES */
+function loadShopState() {
+  points = Number(localStorage.getItem("points") || "0");
+  clickMultiplier = Number(localStorage.getItem("clickMultiplier") || "1");
+  autoClickerLevel = Number(localStorage.getItem("autoClickerLevel") || "0");
+  chaosUnlocked = localStorage.getItem("chaosUnlocked") === "1";
+
+  if (autoClickerLevel > 0) {
+    startAutoClicker();
+  }
+}
+
+function saveShopState() {
+  localStorage.setItem("points", String(points));
+  localStorage.setItem("clickMultiplier", String(clickMultiplier));
+  localStorage.setItem("autoClickerLevel", String(autoClickerLevel));
+  localStorage.setItem("chaosUnlocked", chaosUnlocked ? "1" : "0");
+}
+
+function addPoints(amount) {
+  points += amount;
+  saveShopState();
+  updateShopUI();
+}
+
+function updateShopUI() {
+  document.getElementById("pointsDisplay").textContent = "Points: " + points;
+  document.getElementById("multiplierDisplay").textContent = "Click Multiplier: x" + clickMultiplier;
+}
+
+function buyUpgrade(type) {
+  if (type === "multiplier") {
+    if (points < 50) return notEnough();
+    points -= 50;
+    clickMultiplier += 1;
+  } else if (type === "auto") {
+    if (points < 150) return notEnough();
+    points -= 150;
+    autoClickerLevel += 1;
+    startAutoClicker();
+  } else if (type === "freeze") {
+    if (points < 80) return notEnough();
+    points -= 80;
+    freezeDVD();
+  } else if (type === "chaos") {
+    if (points < 120) return notEnough();
+    points -= 120;
+    chaosUnlocked = true;
+  }
+  saveShopState();
+  updateShopUI();
+  playSound("buySound");
+}
+
+function notEnough() {
+  playSound("errorSound");
+  alert("Not enough points!");
+}
+
+function startAutoClicker() {
+  if (autoClickerInterval) clearInterval(autoClickerInterval);
+  autoClickerInterval = setInterval(() => {
+    addPoints(autoClickerLevel);
+  }, 3000);
+}
+
+function freezeDVD() {
+  dvdFrozen = true;
+  setTimeout(() => dvdFrozen = false, 5000);
+}
+
+/* RESET */
+function resetAll() {
+  if (!confirm("Reset everything? This clears dates, leaderboard, points, upgrades, and theme.")) return;
+  localStorage.clear();
+  points = 0;
+  clickMultiplier = 1;
+  autoClickerLevel = 0;
+  chaosUnlocked = false;
+  if (autoClickerInterval) clearInterval(autoClickerInterval);
+  setTheme("hybrid");
+  soundOn = true;
+  animationsOn = true;
+  document.getElementById("soundToggleBtn").textContent = "On";
+  document.getElementById("animToggleBtn").textContent = "On";
+  document.body.classList.remove("animations-off");
+  updateMostViewed();
+  updateLeaderboard();
+  updateShopUI();
+}
+
+/* INIT */
+function initFromStorage() {
+  const savedTheme = localStorage.getItem("theme") || "hybrid";
+  setTheme(savedTheme);
+
+  soundOn = localStorage.getItem("soundOn") !== "0";
+  animationsOn = localStorage.getItem("animationsOn") !== "0";
+
+  document.getElementById("soundToggleBtn").textContent = soundOn ? "On" : "Off";
+  document.getElementById("animToggleBtn").textContent = animationsOn ? "On" : "Off";
+  if (!animationsOn) {
+    document.body.classList.add("animations-off");
+  }
+
+  loadShopState();
+  updateShopUI();
+  updateMostViewed();
+  updateLeaderboard();
+}
+
+window.addEventListener("resize", () => {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+});
+
+initFromStorage();
+</script>
+
+</body>
+</html>
